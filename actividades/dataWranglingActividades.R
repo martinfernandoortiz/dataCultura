@@ -1,4 +1,5 @@
-# Este documento es para arreglar las actividades...
+#Actividades 2021  Enero - Junio
+#Este documento es para arreglar las actividades...
 # Se unificaron en excel
 setwd("~/Data Cultura_martin/Actividades/2021")
 
