@@ -100,6 +100,21 @@ espaciosLong <- espaciosLong %>% mutate(FUNCION_PRINCIPAL=FUNCION_SECUNDARIA, FU
    
  ))
  
+ 
+
+ comunas <- str_replace(espacios$COMUNA,"COMUNA 5","COMUNA 05")
+ espacios["COMUNA"] <- comunas
+ rm(comunas)
+ 
+ galerias <- str_replace(espacios$SUBCATEGORIA,"GALERÍA DE ARTE","GALERIA DE ARTE")
+ espacios["SUBCATEGORIA"] <- galerias
+ rm(galerias)
+ 
+ 
+ feria <- str_replace(espacios$FUNCION_PRINCIPAL,"FERIA","ESPACIO FERIAL")
+ espacios["FUNCION_PRINCIPAL"] <- feria
+ rm(feria)
+ 
  #rbin funciona si es un data frame sin geo
  #espacios <- rbind(espacios,espaciosLong) 
  
