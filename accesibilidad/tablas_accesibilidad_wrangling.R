@@ -7,17 +7,22 @@ intersecciones <- read_csv("~/Documentos/osrm/v1/final/intersecciones.csv")# Int
 #TABLAS TABLERO ACCESIBILIDAD
 
 
-#INTERSECCIONES ESPACIOS
-
-
 #tabla base de las distancias a barrios
-espaciosBarriosDistancias <- intersecciones %>% 
+ espaciosBarriosDistancias <- intersecciones %>% 
                       as.data.frame() %>% 
                       rename(BARRIO=BARRIO_3,
                              COMUNA=COMUNA_3) %>% 
                       group_by(BARRIO,COMUNA) %>% 
                       summarise_at(vars(c("bar":"cine")), mean)%>%  filter(!is.na(BARRIO)) 
 
+ barriosAlternativos <- intersecciones %>% 
+   as.data.frame() %>% 
+   rename(BARRIO=BARRIO_3,
+          COMUNA=COMUNA_3) %>% 
+   group_by(BARRIO,COMUNA) %>% 
+   summarise_at(vars(c("promediocompuesto":"minimo")), mean)%>%  filter(!is.na(BARRIO)) 
+ 
+ 
 espaciosBarriosDistancias <- espaciosBarriosDistancias %>% 
                             mutate(
                               pcEspacios = mean(
@@ -31,42 +36,11 @@ espaciosBarriosDistancias <- espaciosBarriosDistancias %>%
                                                 )
                                   )  
 
-#write_csv(espaciosBarriosDistancias,"accesibilidad/tablas/espaciosBarriosDistancias.csv")
-
-
-#formato Long de tabla base de las distancias a espacios
-  
-#tabla base de las distancias a espacios
-espaciosComunas <- espaciosBarriosDistancias %>% 
- # as.data.frame() %>% 
-  group_by(COMUNA) %>% 
-  summarise_at(vars(c("bar":"cine")), mean)
-
-pcEspacios <- apply(espaciosComunas[,c(3,4,8:11,13)], 1, mean )
-minEspacios <- apply(espaciosComunas[,c(2:8,12:13)], 1, min )
-pgEspacios <- apply(espaciosComunas[,c(2:8,12:13)], 1, mean )
-
-espaciosComunas["pcEspacios"] <- pcEspacios
-espaciosComunas["minEspacios"] <- minEspacios
-espaciosComunas["pgEspacios"] <- pgEspacios
-rm(pcEspacios,minEspacios,pgEspacios)
-
-#write_csv(espaciosComunas,"accesibilidad/tablas/espaciosComunas.csv")
 
 #formato Long de tabla base de las distancias a espacios
 
 espaciosBarriosDistanciasLong <-  gather(espaciosBarriosDistancias, espacio, distancia, c(3:14), factor_key=TRUE)%>% 
   select(-c(3:5))
-
-espaciosComunasDistanciasLong <-  gather(espaciosComunas, espacio, distancia, c(2:13), factor_key=TRUE) %>% 
-  select(-c(2:4))
-
-
-#write_csv(espaciosBarriosDistanciasLong,"accesibilidad/tablas/espaciosBarriosDistanciasLong.csv")
-#write_csv(espaciosComunasDistanciasLong,"accesibilidad/tablas/espaciosComunasDistanciasLong.csv")
-
-
-
 
 #INTERSECCIONES ACTIVIDADES
 
@@ -86,44 +60,35 @@ actividadesBarriosDistancias <- tablafinalActividades %>%
   group_by(BARRIO,COMUNA) %>% 
   summarise_at(vars(c("escenicas":"formacion")), mean) %>%  filter(!is.na(BARRIO))
 
+
+barriosAlternativos2 <- tablafinalActividades %>% 
+  as.data.frame() %>% 
+  rename(BARRIO=BARRIO_3,
+         COMUNA=COMUNA_3) %>% 
+  group_by(BARRIO,COMUNA) %>% 
+  summarise_at(vars(c("minimo":"promediocompuesto")), mean) %>%  filter(!is.na(BARRIO))
+
+barriosAlternativos["minAct"] <- barriosAlternativos2$minimo
+barriosAlternativos["pcAct"] <- barriosAlternativos2$promediocompuesto
+
+rm(barriosAlternativos2)
+
+
 actividadesBarriosDistancias <- actividadesBarriosDistancias %>% 
               mutate(pcActividades=mean(
                             c(escenicas,visuales,cine,musica,formacion,literatura)
                             ),
-            minActividades=min(escenicas:formacion),
+            minActividades=min(escenicas, visuales,cine,tradicional,diseno,literatura,mixto,musica,otros,inmaterial,formacion),
 
-            pgActividades=mean(c(escenicas:formacion))
+            pgActividades=mean(escenicas, visuales,cine,tradicional,diseno,literatura,mixto,musica,otros,inmaterial,formacion)
   ) 
-#write_csv(actividadesBarriosDistancias,"accesibilidad/tablas/actividadesBarriosDistancias.csv")
 
-
-#COMUNAS
-actividadesComunasDistancias <- actividadesBarriosDistancias %>% 
-  as.data.frame() %>% 
-  group_by(COMUNA) %>% 
-  summarise_at(vars(c("escenicas":"formacion")), mean) 
-
-pcActividades <- apply(actividadesComunasDistancias[,c(2:4,7,9,12)], 1, mean )
-minActividades <- apply(actividadesComunasDistancias[,c(2:12)], 1, min )
-pgActividades <- apply(actividadesComunasDistancias[,c(2:12)], 1, mean )
-
-actividadesComunasDistancias["pcActividades"] <- pcActividades
-actividadesComunasDistancias["minActividades"] <- minActividades
-actividadesComunasDistancias["pgActividades"] <- pgActividades
-rm(pcActividades,minActividades,pgActividades, tablafinalActividades)
-
-#write_csv(actividadesComunasDistancias,"accesibilidad/tablas/actividadesComunasDistancias.csv")
 
 #FORMATOLONGACTIVIDADES
 
 actividadesBarriosDistanciasLong <-  gather(actividadesBarriosDistancias, espacio, distancia, c(3:13), factor_key=TRUE) %>% 
                                      select(-c(3:5))
 
-actividadesComunasDistanciasLong <-  gather(actividadesBarriosDistancias, espacio, distancia, c(3:13), factor_key=TRUE) %>% 
-  select(-c(3:5))
-
-#write_csv(actividadesBarriosDistanciasLong,"accesibilidad/tablas/actividadesBarriosDistanciasLong.csv")
-#write_csv(actividadesComunasDistanciasLong,"accesibilidad/tablas/actividadesComunasDistanciasLong.csv")
 
 
 #INTERSECCIONES INFRAESTRUCTURA PUBLICA
@@ -169,59 +134,12 @@ rm(pgCiudad,pgNac,promedioPublica,minA,minB,minBoth,minC,minCiudad,minD,minE,min
 infraestructuraPublica["BARRIO"] <- actividadesBarriosDistancias$BARRIO
 
 
-#write_csv(infraestructuraPublica,"accesibilidad/tablas/infraestructuraPublica.csv")
-
-
-#COMUNAS
-
-infraestructuraPublicaComunas <- infraestructuraPublica %>% 
-  as.data.frame() %>% 
-  group_by(COMUNA) %>% 
-  summarise_at(vars(c("bibliotecasCiudad":"formacionNac")), mean) 
-
-
-minCiudad <- apply(infraestructuraPublicaComunas[,c(2:6)], 1, min )
-minNac <- apply(infraestructuraPublicaComunas[,c(7:12)], 1, min )
-minBoth <- apply(infraestructuraPublicaComunas[,c(2:12)], 1, min )
-
-infraestructuraPublicaComunas["minCiudad"] <- minCiudad
-infraestructuraPublicaComunas["minNac"] <- minNac
-infraestructuraPublicaComunas["minBoth"] <- minBoth
-
-pgCiudad <- apply(infraestructuraPublicaComunas[,c(2:6)], 1, mean )
-pgNac <- apply(infraestructuraPublicaComunas[,c(7:12)], 1, mean )
-pgBoth <- apply(infraestructuraPublicaComunas[,c(2:12)], 1, mean )
-
-minA <- apply(infraestructuraPublicaComunas[,c(2,7)], 1, min )
-minB <- apply(infraestructuraPublicaComunas[,c(3,8)], 1, min )
-minC <- apply(infraestructuraPublicaComunas[,c(4,10)], 1, min )
-minD <- apply(infraestructuraPublicaComunas[,c(5,11)], 1, min )
-minE <- apply(infraestructuraPublicaComunas[,c(6,12)], 1, min )
-
-dataframe <- data.frame(minA,minB,minC,minD,minE,infraestructuraPublicaComunas$cinesNac)
-promedioPublica <- apply(dataframe, 1, min )
-rm(dataframe)
-
-infraestructuraPublicaComunas["pgCiudad"] <- pgCiudad
-infraestructuraPublicaComunas["pgNac"] <- pgNac
-infraestructuraPublicaComunas["pgBoth"] <- pgoth
-infraestructuraPublicaComunas["promedioPublica"] <- promedioPublica
-
-rm(pgCiudad,pgNac,promedioPublica,minA,minB,minBoth,minC,minCiudad,minD,minE,minNac,pgBoth)
-
-#write_csv(infraestructuraPublicaComunas,"accesibilidad/tablas/infraestructuraPublicaComunas.csv")
-
 
 
 #INFRAESTRUCTURA PUBLICA LONG
 
 infraestructuraPublicaLong <-  gather(infraestructuraPublica, espacio, distancia, c(2:12), factor_key=TRUE)%>% 
-                            select(-c(2,3,5:8))
-
-infraestructuraPublicaComunasLong <-  gather(infraestructuraPublicaComunas, espacio, distancia, c(2:12), factor_key=TRUE) %>% select(-c(2:7))
-
-#write_csv(infraestructuraPublicaLong,"accesibilidad/tablas/infraestructuraPublicaLong.csv")
-#write_csv(infraestructuraPublicaComunasLong,"accesibilidad/tablas/infraestructuraPublicaComunasLong.csv")
+                            select(-c(2,3,5:8)) 
 
 
 #ESPACIOS
@@ -261,6 +179,7 @@ pivotes <- espacios %>% as.data.frame() %>% group_by(BARRIO,COMUNA,SUBCATEGORIA)
 espaciosCantidad <- espaciosCantidad %>% left_join(pivotes, by="BARRIO")%>% select(-18)
 rm(pivotes)
 
+write_csv(espacios,"accesibilidad/tablas/espacios.csv")
 
 #Cantidad de Espacios del Ministerio
 espaciosCantidadCiudad <- espacios %>%as.data.frame() %>% select(-geom) %>%  filter(minCult==1) %>% 
@@ -271,11 +190,14 @@ espaciosDistintosCiudad <- espacios %>% as.data.frame() %>% select(-geom) %>% fi
                           summarise(distintosCiudad= n_distinct(FUNCION_PRINCIPAL))
 
 #Joineo a la tabla en general
-espaciosCantidad <- espaciosCantidad %>% left_join(espaciosCantidadCiudad, by="BARRIO") %>% select(-22) %>%
-                                        left_join(espaciosDistintosCiudad,by="BARRIO")
+espaciosCantidad <- espaciosCantidad %>% left_join(espaciosCantidadCiudad, by="BARRIO") 
+espaciosCantidad <- espaciosCantidad %>% select(-c(17,21))
+espaciosCantidad <- espaciosCantidad %>% left_join(espaciosDistintosCiudad,by="BARRIO")
+
+
 rm(espaciosCantidadCiudad,espaciosDistintosCiudad)
 
-
+#################################################
 #NACION 
 
 #Cantidad de Espacios Nación
@@ -287,7 +209,11 @@ espaciosDistintosNacion <- espacios %>% as.data.frame() %>% select(-geom) %>% fi
   summarise(distintosNacion= n_distinct(FUNCION_PRINCIPAL))
 
 #Joineo a la tabla en general
-espaciosCantidad <- espaciosCantidad %>% left_join(espaciosCantidadNacion, by="BARRIO") %>% left_join(espaciosDistintosNacion,by="BARRIO") %>% select(-24)
+espaciosCantidad <- espaciosCantidad %>% left_join(espaciosCantidadNacion, by="BARRIO") 
+espaciosCantidad <- espaciosCantidad %>% select(-22)
+
+espaciosCantidad <- espaciosCantidad %>% left_join(espaciosDistintosNacion,by="BARRIO")
+
 rm(espaciosCantidadNacion,espaciosDistintosNacion)
 
 
@@ -302,19 +228,17 @@ espaciosDistintosPublicos <- espacios %>% as.data.frame() %>% select(-geom) %>% 
   summarise(distintosPublicos= n_distinct(FUNCION_PRINCIPAL))
 
 #Joineo a la tabla en general
-espaciosCantidad <- espaciosCantidad %>% left_join(espaciosCantidadPublicos, by="BARRIO") %>% left_join(espaciosDistintosPublicos,by="BARRIO") %>% select(-26) 
+espaciosCantidad <- espaciosCantidad %>% left_join(espaciosCantidadPublicos, by="BARRIO") 
+espaciosCantidad <- espaciosCantidad %>% select(-24)
+
+espaciosCantidad <- espaciosCantidad %>% left_join(espaciosDistintosPublicos,by="BARRIO")
 
 rm(espaciosCantidadPublicos,espaciosDistintosPublicos)
 
-espaciosCantidad <- espaciosCantidad%>% select(-c(2,17,21,23,25))
 espaciosCantidad[is.na(espaciosCantidad)] <- 0
-
-barrios <- espaciosBarriosDistancias %>% left_join(espaciosCantidad) %>% left_join(actividadesBarriosDistancias, by="BARRIO") %>% select(-38) %>% 
-                                         left_join(infraestructuraPublica, by="BARRIO") %>% select(-65)
 
 
 #write_csv(espaciosCantidad,"accesibilidad/tablas/espaciosCantidad.csv")
-write_csv(barrios,"accesibilidad/tablas/barrios.csv")
 
 
 #DEMOGRAFIA
@@ -326,6 +250,7 @@ poblacion <- poblacion[,c(3:5)]
 poblacion <- poblacion %>% rename(BARRIO=BARRIOS)
 
 espaciosCantidad <- espaciosCantidad %>% left_join(poblacion, by="BARRIO")
+espaciosCantidad <- espaciosCantidad %>% select(-26)
 
 espaciosDemografia <- espacios %>% as.data.frame() %>% select(-geom) %>%  group_by(FUNCION_PRINCIPAL) %>% count()
 
@@ -333,11 +258,115 @@ demografia <- espaciosDemografia$n/3078836 *100000
 espaciosDemografia["demografia"] <- demografia
 rm(demografia)
 
-#write_csv(espaciosDemografia,"accesibilidad/tablas/espaciosDemografia.csv")
+write_csv(espaciosDemografia,"accesibilidad/tablas/espaciosDemografia.csv")
+
+
+#UNIFICACION
+barrios <- espaciosBarriosDistancias %>% left_join(espaciosCantidad) %>% left_join(actividadesBarriosDistancias, by="BARRIO") 
+barrios <- barrios %>% left_join(infraestructuraPublica, by="BARRIO")
+barrios <- barrios %>% mutate(minBoth= min(minCiudad,minNac))
+barrios["tot_pob"] <- poblacion$tot_pob
+barrios <- barrios %>% select(-c(18,43,71))
 
 
 
-#
-barrios <- espaciosBarriosDistancias %>% left_join(espaciosCantidad)
-#ACTIVIDADES
+write_csv(barrios,"accesibilidad/tablas/barrios.csv")
+writexl::write_xlsx(barrios,"accesibilidad/tablas/barrios.xlsx")
+writexl::write_xlsx(barriosAlternativos,"accesibilidad/tablas/barriosAlternativos.xlsx")
 
+#COMUNAS
+comunas2 <- barrios %>% group_by(COMUNA.x) %>%summarise_at(vars(c("bar":"promedioPublica")), mean) 
+comunas3 <- barrios %>% group_by(COMUNA.x) %>%summarise_at(vars(c("bar":"promedioPublica")), sum) 
+comunas <-  bind_cols(comunas2[,c(1:16)],comunas3[,c(17:40)], comunas2[,c(41:71)])
+rm(comunas2,comunas3)
+
+
+espaciosDistintos <- espacios %>% as.data.frame() %>% select(-geom) %>% 
+  group_by(COMUNA) %>% 
+  summarise(distintos= n_distinct(FUNCION_PRINCIPAL))
+
+
+comunas["distintos"] <- espaciosDistintos$distintos
+rm(espaciosDistintos)
+
+
+
+#Variedad de Espacios del Ministerio
+espaciosDistintosCiudad <- espacios %>% as.data.frame() %>% select(-geom) %>% filter(minCult==1) %>%   group_by(COMUNA) %>% 
+  summarise(distintosCiudad= n_distinct(FUNCION_PRINCIPAL))
+
+comunas["distintosCiudad"] <- espaciosDistintosCiudad$distintosCiudad
+rm(espaciosDistintosCiudad)
+
+#NACION 
+
+
+#Variedad de Espacios de Nación
+espaciosDistintosNacion <- espacios %>% as.data.frame() %>% select(-geom) %>% filter(minCult==2) %>%   group_by(COMUNA) %>% 
+  summarise(distintosNacion= n_distinct(FUNCION_PRINCIPAL)) %>% mutate(COMUNA=as.integer(str_sub(COMUNA,8,9)))
+
+comunas["distintosNacion"] <- 0
+
+comunas <- comunas %>% rename("COMUNA"="COMUNA.x")
+comunas <- comunas %>% left_join(espaciosDistintosNacion, by='COMUNA') %>% mutate(distintosNacion.x=distintosNacion.y) %>%  select(-72) %>% 
+                                  rename("distintoNacion"="distintosNacion.x")
+rm(espaciosDistintosNacion)
+
+
+#PUBLICA GENERAL
+
+#Variedad de Espacios de Nación
+espaciosDistintosPublicos <- espacios %>% as.data.frame() %>% select(-geom) %>% filter(!is.na(minCult)) %>%   group_by(COMUNA) %>% 
+  summarise(distintosPublicos= n_distinct(FUNCION_PRINCIPAL))
+
+comunas["distintosPublicos"] <- espaciosDistintosPublicos$distintosPublicos
+rm(espaciosDistintosPublicos)
+
+comunas[is.na(comunas)] <- 0
+
+writexl::write_xlsx(comunas,"accesibilidad/tablas/comunas.xlsx")
+
+comunasAlternativas <- barriosAlternativos %>% group_by(COMUNA) %>% summarise_at(vars(c("promediocompuesto":"pcAct")), mean)
+writexl::write_xlsx(comunasAlternativas,"accesibilidad/tablas/comunasAlternativas.xlsx")
+
+
+#LONGS
+actividadesBarriosDistanciasLong <- actividadesBarriosDistanciasLong %>% mutate(tabla="ActividadesDistancias")
+espaciosBarriosDistanciasLong <- espaciosBarriosDistanciasLong %>% mutate(tabla="EspaciosDistancias")
+infraestructuraPublicaLong <- infraestructuraPublicaLong %>% mutate(tabla=if_else(str_sub(espacio,-3,str_length(espacio))=='Nac','Nación','Ciudad'))
+espaciosDemografiaLong <- barrios[,c(1:2,20:34,41)]
+espaciosDemografiaLong <-  gather(espaciosDemografiaLong, espacio, distancia, c(3:17), factor_key=TRUE)
+
+espaciosDemografiaLong <- espaciosDemografiaLong %>% mutate(tabla="Demografia")
+                                                                      
+
+barriosLong <- bind_rows(actividadesBarriosDistanciasLong,espaciosBarriosDistanciasLong)
+barriosLong <- bind_rows(barriosLong,infraestructuraPublicaLong)
+barriosLong <- bind_rows(barriosLong,espaciosDemografiaLong)
+
+write_csv(barriosLong,"accesibilidad/tablas/barriosLong.csv")
+writexl::write_xlsx(barriosLong,"accesibilidad/tablas/barriosLong.xlsx")
+
+
+#LONGS COMUNAS
+espaciosComunasDistanciasLong <-  gather(comunas, espacio, distancia, c(2:13), factor_key=TRUE) %>% select(c(1,60,61)) %>% mutate(tabla="distanciaEspacios")
+
+actividadesComunasDistanciasLong <-  gather(comunas, espacio, distancia, c(41:51), factor_key=TRUE) %>% mutate(tabla="distanciaActividades") %>% 
+    select(c(1,61:63))
+
+infraestructuraPublicaComunasLong <-  gather(comunas, espacio, distancia, c(55:65), factor_key=TRUE) %>% mutate(tabla="Infraestructura Publica") %>% 
+  select(c(1,61:63))
+
+
+infraestructuraPublicaComunasLong <- infraestructuraPublicaComunasLong %>% 
+                                  mutate(tabla=if_else(str_sub(espacio,-3,str_length(espacio))=='Nac','Nación','Ciudad'))
+
+espaciosDemografiaLongComu <- comunas[,c(1,19:33,40)]
+espaciosDemografiaLongComu <-  gather(espaciosDemografiaLongComu, espacio, distancia, c(2:16), factor_key=TRUE)
+espaciosDemografiaLongComu <- espaciosDemografiaLongComu %>% mutate(tabla="Demografia")
+
+comunasLong <- bind_rows(espaciosComunasDistanciasLong,actividadesComunasDistanciasLong)
+comunasLong <- bind_rows(comunasLong,infraestructuraPublicaComunasLong)
+comunasLong <- bind_rows(comunasLong,espaciosDemografiaLongComu)
+
+writexl::write_xlsx(comunasLong,"accesibilidad/tablas/comunasLong.xlsx")
